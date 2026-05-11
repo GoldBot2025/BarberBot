@@ -1,0 +1,8 @@
+BOT_TOKEN = "8760979961:AAEBJUz1hW8ebIBl5dohNCaPCfFKBwEqrpU"
+
+ADMIN_IDS = [5189551893]
+
+barbers = {
+    "Максим": 5189551893,
+    "Алишер": 7941907900
+}
