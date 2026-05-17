@@ -417,22 +417,25 @@ async def choose_time(call: CallbackQuery):
     kb = []
 
     now = datetime.now()
-    today = now.strftime("%d.%m")
 
     for t in times:
 
-        if date == today:
+        try:
+            selected_datetime = datetime.strptime(
+                f"{date} {t}",
+                "%d.%m %H:%M"
+            )
 
-            t_obj = datetime.strptime(t, "%H:%M")
+            selected_datetime = selected_datetime.replace(
+                year=now.year
+            )
 
-            if (
-                t_obj.hour < now.hour or
-                (
-                    t_obj.hour == now.hour and
-                    t_obj.minute <= now.minute
-                )
-            ):
-                continue
+        except:
+            continue
+
+        # если время уже прошло
+        if selected_datetime <= now:
+            continue
 
         kb.append([
             InlineKeyboardButton(
@@ -470,9 +473,9 @@ async def choose_time(call: CallbackQuery):
 @router.callback_query(F.data.startswith("time|"))
 async def pick_time(call: CallbackQuery):
 
-    time = call.data.split("|")[1]
+    selected_time = call.data.split("|")[1]
 
-    user_data[call.from_user.id]["time"] = time
+    user_data[call.from_user.id]["time"] = selected_time
 
     await show_barbers(call.message)
 
@@ -494,7 +497,7 @@ async def custom_time(call: CallbackQuery):
 
 
 # ===== РУЧНОЕ ВРЕМЯ =====
-@router.message(F.text.regexp(r"^\\d{1,2}:\\d{2}$"))
+@router.message(F.text.regexp(r"^\d{1,2}:\d{2}$"))
 async def get_time(msg: Message):
 
     data = user_data.get(msg.from_user.id)
@@ -503,19 +506,6 @@ async def get_time(msg: Message):
         return
 
     if not data.get("await_time"):
-        return
-
-    if not re.match(r"^\d{1,2}:\d{2}$", msg.text):
-
-        await msg.answer(
-            txt(
-                msg.from_user.id,
-                "❌ Неверный формат",
-                "❌ Noto'g'ri format",
-                "❌ Wrong format"
-            )
-        )
-
         return
 
     custom_value = msg.text
@@ -543,34 +533,76 @@ async def get_time(msg: Message):
     date = data["date"]
 
     now = datetime.now()
-    today = now.strftime("%d.%m")
 
-    if date == today:
+    selected_datetime = datetime.strptime(
+        f"{date} {custom_value}",
+        "%d.%m %H:%M"
+    ).replace(year=now.year)
 
-        if (
-            t_obj.hour < now.hour or
-            (
-                t_obj.hour == now.hour and
-                t_obj.minute <= now.minute
+    if selected_datetime <= now:
+
+        await msg.answer(
+            txt(
+                msg.from_user.id,
+                "❌ Это время уже прошло",
+                "❌ Bu vaqt o'tib ketgan",
+                "❌ This time already passed"
             )
-        ):
+        )
 
-            await msg.answer(
-                txt(
-                    msg.from_user.id,
-                    "❌ Это время уже прошло",
-                    "❌ Bu vaqt o'tib ketgan",
-                    "❌ This time already passed"
-                )
-            )
-
-            return
+        return
 
     data["time"] = custom_value
     data["await_time"] = False
 
     await show_barbers(msg)
 
+
+# ===== ПОКАЗ БАРБЕРОВ =====
+async def show_barbers(msg):
+
+    data = user_data[msg.chat.id]
+
+    date = data["date"]
+    time = data["time"]
+
+    kb = []
+
+    for barber_name in barbers:
+
+        if date in off_days[barber_name]:
+            continue
+
+        busy = slots[barber_name].get(date, set())
+
+        disabled = disabled_times.get(
+            barber_name,
+            {}
+        ).get(date, [])
+
+        text = barber_name
+
+        if time in busy or time in disabled:
+            text += " ❌"
+
+        kb.append([
+            InlineKeyboardButton(
+                text=text,
+                callback_data=f"barber|{barber_name}"
+            )
+        ])
+
+    await msg.answer(
+        txt(
+            msg.chat.id,
+            "Выбери барбера:",
+            "Barberni tanlang:",
+            "Choose barber:"
+        ),
+        reply_markup=InlineKeyboardMarkup(
+            inline_keyboard=kb
+        )
+    )
 
 # ===== ПОКАЗ БАРБЕРОВ =====
 async def show_barbers(msg):
