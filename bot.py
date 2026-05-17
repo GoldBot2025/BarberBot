@@ -1,3 +1,4 @@
+from training import router as training_router
 import asyncio
 
 from aiogram import Bot, Dispatcher
@@ -15,31 +16,34 @@ bot = Bot(
 )
 
 dp = Dispatcher()
-
+dp.include_router(training_router)
 
 # ===== КОМАНДЫ =====
 async def set_commands():
 
     commands = [
 
-        BotCommand(
-            command="start",
-            description="Запустить бота"
-        ),
+    BotCommand(
+        command="start",
+        description="Запустить бота"
+    ),
 
-        BotCommand(
-            command="my",
-            description="Мои записи"
-        ),
+    BotCommand(
+        command="my",
+        description="Мои записи"
+    ),
 
-        BotCommand(
-            command="admin",
-            description="Админ панель"
-        )
+    BotCommand(
+        command="admin",
+        description="Админ панель"
+    ),
 
-    ]
+    BotCommand(
+        command="training",
+        description="Обучение сотрудников"
+    )
 
-    await bot.set_my_commands(commands)
+]
 
 
 # ===== СТАРТ =====
