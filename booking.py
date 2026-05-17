@@ -405,7 +405,6 @@ async def choose_date(call: CallbackQuery):
         )
     )
 
-
 # ===== ВЫБОР ВРЕМЕНИ =====
 @router.callback_query(F.data.startswith("date|"))
 async def choose_time(call: CallbackQuery):
@@ -465,57 +464,20 @@ async def choose_time(call: CallbackQuery):
         )
     )
 
+    await call.answer()
+
 
 # ===== ВРЕМЯ КНОПКОЙ =====
 @router.callback_query(F.data.startswith("time|"))
 async def pick_time(call: CallbackQuery):
 
-    time = call.data.split("|")[1]
+    selected_time = call.data.split("|")[1]
 
-    user_data[call.from_user.id]["time"] = time
+    user_data[call.from_user.id]["time"] = selected_time
 
-    await show_barbers(call.message)
+    await call.answer()
 
-
-# ===== СВОЕ ВРЕМЯ =====
-@router.callback_query(F.data == "custom")
-async def custom_time(call: CallbackQuery):
-
-    user_data[call.from_user.id]["await_time"] = True
-
-    await call.message.edit_text(
-        txt(
-            call.from_user.id,
-            "Введи время (12:20)",
-            "Vaqt kiriting (12:20)",
-            "Enter time (12:20)"
-        )
-    )
-
-
-# ===== РУЧНОЕ ВРЕМЯ =====
-@router.message(F.text.regexp(r"^\\d{1,2}:\\d{2}$"))
-async def get_time(msg: Message):
-
-    data = user_data.get(msg.from_user.id)
-
-    if not data:
-        return
-
-    if not data.get("await_time"):
-        return
-
-    if not re.match(r"^\d{1,2}:\d{2}$", msg.text):
-
-        await msg.answer(
-            txt(
-                msg.from_user.id,
-                "❌ Неверный формат",
-                "❌ Noto'g'ri format",
-                "❌ Wrong format"
-            )
-        )
-
+    await show_barbers(call)
         return
 
     custom_value = msg.text
